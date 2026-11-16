@@ -1,0 +1,20 @@
+{
+  "author": "Maliki Saputra (@malikisaputra)",
+  "license": "SEE LICENSE IN ../LISENSI.md",
+  "name": "motion-maliki",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "buat": "node buat.mjs",
+    "studio": "remotion studio src/index.ts",
+    "naskah": "node naskah.mjs"
+  },
+  "dependencies": {
+    "@google/genai": "^3.3.0",
+    "@remotion/cli": "4.0.536",
+    "@remotion/google-fonts": "4.0.536",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.536"
+  }
+}

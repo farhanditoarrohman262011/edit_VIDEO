@@ -1,0 +1,11 @@
+{
+  "judul": "3 Kebiasaan Kecil",
+  "gaya": "garis",
+  "handle": "@malikisaputra",
+  "adegan": [
+    {"judul": "Mulai dari dua menit", "teks": "Kebiasaan besar selalu mulai dari langkah dua menit.", "kunci": ["dua", "menit"], "ikon": "⏱️"},
+    {"judul": "Tulis satu hal", "teks": "Pagi ini, tulis satu hal paling penting yang harus selesai.", "kunci": ["satu", "penting"], "ikon": "✍️"},
+    {"judul": "Matikan notifikasi", "teks": "Matikan notifikasi selama tiga puluh menit dan kerjakan itu.", "kunci": ["notifikasi"], "ikon": "🔕"},
+    {"judul": "Ulangi besok", "teks": "Ulangi besok. Konsisten lebih kuat daripada semangat.", "kunci": ["konsisten"], "ikon": "🔁"}
+  ]
+}

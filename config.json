@@ -1,0 +1,50 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "alat/studio/index.html"
+        ],
+        "createdAt": "2026-11-13T14:41:21.310Z",
+        "reason": "Claude: satu-satunya glow adalah pratinjau gaya Neon yang meniru video render alat/motion"
+      },
+      {
+        "rule": "wide-tracking",
+        "value": "*",
+        "files": [
+          "alat/studio/index.html"
+        ],
+        "createdAt": "2026-11-13T14:45:49.087Z",
+        "reason": "Maliki minta gaya disamakan dengan malikisaputra.biz.id/kode, yang memakai label mono huruf kecil letter-spacing .08em"
+      },
+      {
+        "rule": "overused-font",
+        "value": "space grotesk",
+        "createdAt": "2026-11-14T02:35:02.052Z",
+        "reason": "Maliki minta UI Studio disamakan dengan situs malikisaputra.biz.id/kode (font situs: Space Grotesk)"
+      },
+      {
+        "rule": "pulsing-dot",
+        "value": "*",
+        "files": [
+          "index.html"
+        ],
+        "createdAt": "2026-11-14T02:35:02.070Z",
+        "reason": "Maliki minta animasi senada situs /kode; titik berdenyut dipakai untuk status AI/proses yang memang hidup"
+      },
+      {
+        "rule": "marquee",
+        "value": "*",
+        "files": [
+          "index.html"
+        ],
+        "createdAt": "2026-11-14T03:09:49.507Z",
+        "reason": "Satu-satunya loop horizontal = sapuan bilah progres yang hanya aktif saat body.bekerja (render/analisis berjalan); indikator kerja nyata"
+      }
+    ]
+  }
+}
