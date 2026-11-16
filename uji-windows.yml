@@ -1,0 +1,115 @@
+# Uji installer Windows di mesin Windows milik GitHub: rakit → pasang diam-diam → nyalakan Studio → render 1 klip.
+# Tidak mengunggah apa pun ke rilis. Jalankan dari tab Actions → "Uji Windows" → Run workflow.
+name: Uji Windows
+
+on:
+  workflow_dispatch:
+
+jobs:
+  uji:
+    runs-on: windows-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Pasang Inno Setup 6
+        shell: pwsh
+        run: if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup -y --no-progress }
+
+      - name: Rakit installer
+        shell: pwsh
+        run: pwsh -File pemasang\bangun-windows.ps1
+
+      - name: Pasang diam-diam (tanpa admin)
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem pemasang\hasil\Pasang-Studio-Maliki-*-windows.exe | Select-Object -First 1
+          Start-Process $exe.FullName -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/LOG=pasang.log' -Wait
+          $app = "$env:LOCALAPPDATA\Programs\Studio Maliki"
+          if (-not (Test-Path "$app\python\python.exe")) { Get-Content pasang.log -Tail 40; throw "Python bawaan tidak terpasang" }
+          Get-Content "$app\VERSI" -ErrorAction SilentlyContinue
+          "APP=$app" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Nyalakan Studio (port 8787 sengaja dipakai aplikasi lain)
+        shell: pwsh
+        run: |
+          # pengganggu di 8787, meniru server pengembangan lain → Studio harus pindah port
+          $peng = Start-Process python -ArgumentList '-m','http.server','8787','--bind','127.0.0.1' -PassThru -WindowStyle Hidden
+          $p = Start-Process "$env:APP\python\python.exe" -ArgumentList '-u',"`"$env:APP\alat\studio\studio.py`"",'--tanpa-buka' `
+               -WorkingDirectory "$env:APP\alat\studio" -PassThru -RedirectStandardOutput "$env:GITHUB_WORKSPACE\studio.out" -RedirectStandardError "$env:GITHUB_WORKSPACE\studio.err"
+          $ok = $false
+          foreach ($i in 1..60) {
+            Start-Sleep 3
+            foreach ($port in 8787..8792) {
+              try { $r = Invoke-RestMethod "http://127.0.0.1:$port/api/status" -TimeoutSec 2
+                    if ($r.PSObject.Properties.Name -contains 'jenis') { Write-Host "Studio jalan di port $port"; $ok = $true; break } } catch {}
+            }
+            if ($ok) { break }
+          }
+          Get-Content "$env:GITHUB_WORKSPACE\studio.out", "$env:GITHUB_WORKSPACE\studio.err" -ErrorAction SilentlyContinue
+          if (-not $ok) { & "$env:APP\python\python.exe" -c "import sys,webview,cv2,faster_whisper;print(sys.version)" }
+          if (-not $ok) { throw "Studio tidak menyala" }
+          Stop-Process $p.Id -Force; Stop-Process $peng.Id -Force
+
+      - name: Render 1 klip (gaya Hook Neon + Kertas Sobek)
+        shell: pwsh
+        run: |
+          $py = "$env:APP\python\python.exe"
+          $ff = & $py -c "import imageio_ffmpeg;print(imageio_ffmpeg.get_ffmpeg_exe())"
+          & $ff -v error -y -f lavfi -i testsrc2=s=1280x720:d=40 -f lavfi -i sine=f=300:d=40 -c:v libx264 -c:a aac uji.mp4
+          $srt = ""
+          foreach ($i in 0..19) { $a = [TimeSpan]::FromSeconds($i*2); $b = [TimeSpan]::FromSeconds($i*2+2)
+            $srt += "$($i+1)`n{0:hh\:mm\:ss\,fff} --> {1:hh\:mm\:ss\,fff}`nRahasia penting kenapa klip ini bisa viral nomor $i`n`n" -f $a,$b }
+          Set-Content uji.srt $srt -Encoding utf8
+          foreach ($g in @('{"preset":"neon","banner":false}', '{"preset":"sobek","banner":false,"transisi":true}')) {
+            $out = "hasil-" + ($g | ConvertFrom-Json).preset
+            & $py "$env:APP\alat\klip\klip.py" uji.mp4 --subtitle-file uji.srt --jumlah 1 --durasi 20 --keluar $out --gaya $g
+            if ($LASTEXITCODE -ne 0) { throw "Render $g gagal" }
+            $f = Get-ChildItem "$out\klip-*.mp4" | Select-Object -First 1
+            if (-not $f -or $f.Length -lt 100000) { throw "Klip tidak terbentuk untuk $g" }
+            Write-Host "OK $($f.FullName) $([math]::Round($f.Length/1MB,1)) MB"
+            & $ff -v error -y -ss 1 -i $f.FullName -frames:v 1 "$out.png"
+          }
+
+      - name: Motion dari naskah tempelan (harus memakai naskah ini, bukan contoh.json)
+        shell: pwsh
+        run: |
+          $p = Start-Process "$env:APP\python\python.exe" -ArgumentList '-u',"`"$env:APP\alat\studio\studio.py`"",'--tanpa-buka' `
+               -WorkingDirectory "$env:APP\alat\studio" -PassThru -RedirectStandardOutput "$env:GITHUB_WORKSPACE\studio2.out" -RedirectStandardError "$env:GITHUB_WORKSPACE\studio2.err"
+          $u = $null
+          foreach ($i in 1..40) { Start-Sleep 3; foreach ($port in 8787..8792) { try { $r = Invoke-RestMethod "http://127.0.0.1:$port/api/status" -TimeoutSec 2; if ($r.PSObject.Properties.Name -contains 'jenis') { $u = "http://127.0.0.1:$port"; break } } catch {} }; if ($u) { break } }
+          if (-not $u) { throw "Studio tidak menyala" }
+          $naskah = @{ judul = 'UJI WINDOWS 777'; gaya = 'garis'; handle = '@uji'; adegan = @(
+            @{ judul = 'NASKAH UJI WINDOWS'; teks = 'Ini naskah uji dari GitHub Actions.'; kunci = @('uji'); ikon = '🧪' },
+            @{ judul = 'ADEGAN KEDUA UJI'; teks = 'Kalau ini muncul, naskahnya terbaca.'; kunci = @('terbaca'); ikon = '✅' }) } | ConvertTo-Json -Depth 5 -Compress
+          $body = @{ naskah = $naskah; gaya = 'garis'; ai = 'lokal' } | ConvertTo-Json -Depth 5 -Compress
+          $r = Invoke-RestMethod "$u/api/motion" -Method Post -Body ([Text.Encoding]::UTF8.GetBytes($body)) -ContentType 'application/json'
+          Write-Host "Proyek: $($r.proyek)"
+          foreach ($i in 1..240) { Start-Sleep 5; $s = Invoke-RestMethod "$u/api/status"; if ($s.status -ne 'jalan') { break } }
+          $s.log | Out-File -Encoding utf8 "$env:GITHUB_WORKSPACE\motion-log.txt"; $s.log | Select-String -Pattern 'Error|error|rror:|Adegan|Render|Module|resolve|ENOENT' | Select-Object -First 30
+          Write-Host "Status: $($s.status)"
+          $mp4 = Get-ChildItem "$env:USERPROFILE\Studio Maliki" -Recurse -Filter *.mp4 | Where-Object { $_.FullName -like '*motion*' } | Sort-Object LastWriteTime | Select-Object -Last 1
+          if (-not $mp4) { throw "Video Motion tidak terbentuk" }
+          $ff = & "$env:APP\python\python.exe" -c "import imageio_ffmpeg;print(imageio_ffmpeg.get_ffmpeg_exe())"
+          & $ff -v error -y -ss 1.5 -i $mp4.FullName -frames:v 1 motion-1.png
+          & $ff -v error -y -sseof -2 -i $mp4.FullName -frames:v 1 motion-2.png
+          Copy-Item $mp4.FullName motion.mp4
+          Stop-Process $p.Id -Force
+
+      - name: Simpan hasil uji
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hasil-uji-windows
+          path: |
+            hasil-*/klip-*.mp4
+            hasil-*.png
+            motion*.png
+            motion.mp4
+            motion-log.txt
+            pemasang/hasil/Pasang-Studio-Maliki-*-windows.exe
+            studio2.*
+            studio.out
+            studio.err
+            pasang.log
+          retention-days: 7

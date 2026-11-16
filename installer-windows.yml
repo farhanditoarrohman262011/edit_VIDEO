@@ -1,0 +1,50 @@
+# Merakit installer Windows Studio Maliki di mesin Windows milik GitHub, lalu memasangnya ke rilis.
+# Jalankan dari tab Actions → "Installer Windows" → Run workflow (isi tag rilis, mis. v2.0.0).
+name: Installer Windows
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag rilis tujuan (mis. v2.0.0)"
+        required: true
+        default: "v2.0.0"
+
+permissions:
+  contents: write
+
+jobs:
+  bangun:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pasang uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Pasang Inno Setup 6
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) { choco install innosetup -y --no-progress }
+
+      - name: Rakit installer
+        shell: pwsh
+        run: pwsh -File pemasang\bangun-windows.ps1
+
+      - name: Ganti nama & unggah ke rilis
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $exe = Get-ChildItem pemasang\hasil\Pasang-Studio-Maliki-*-windows.exe | Select-Object -First 1
+          Copy-Item $exe.FullName Studio-Maliki-Windows.exe
+          Write-Host "Ukuran: $([math]::Round((Get-Item Studio-Maliki-Windows.exe).Length / 1MB)) MB"
+          gh release upload "${{ inputs.tag }}" Studio-Maliki-Windows.exe --clobber
+
+      - name: Simpan juga sebagai artefak
+        uses: actions/upload-artifact@v4
+        with:
+          name: Studio-Maliki-Windows
+          path: Studio-Maliki-Windows.exe
+          retention-days: 14
